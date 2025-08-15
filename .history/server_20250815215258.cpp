@@ -64,21 +64,19 @@ string CommandExecutor(string command){
         return "Sync operation completed";
     }
     if(operation_id==11){ // set process
-        string processid="";
         for(char c:command){
             if(c==' '){
-                break;
+                cout<<"Process name cannot contain spaces\n";
+                return "Process name cannot contain spaces";
             }
-            processid+=c;
         }
-        command.erase(0,processid.size()+1);
         json j=json::parse(command);
         ProcessContainer pc;
         pc=j;
-        memory_container.process_container[processid]=pc;
+        string proc_name=pc.Vars["Name"].Value;
+        memory_container.process_container[proc_name]=pc;
         return "Process operation completed";
     }
-    //TODO: 12 get process
 }
 
 // 会话类

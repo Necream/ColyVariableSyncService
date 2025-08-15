@@ -63,22 +63,14 @@ string CommandExecutor(string command){
         memory_container.Sync(new_container);
         return "Sync operation completed";
     }
-    if(operation_id==11){ // set process
-        string processid="";
-        for(char c:command){
-            if(c==' '){
-                break;
-            }
-            processid+=c;
-        }
-        command.erase(0,processid.size()+1);
+    if(operation_id==11){ // process
         json j=json::parse(command);
         ProcessContainer pc;
         pc=j;
-        memory_container.process_container[processid]=pc;
+        string proc_name=pc.Vars["Name"].Value;
+        memory_container.process_container[proc_name]=pc;
         return "Process operation completed";
     }
-    //TODO: 12 get process
 }
 
 // 会话类

@@ -1,0 +1,6 @@
+﻿#ifndef __LIBVARCONTAINER_HPP__
+#define __LIBVARCONTAINER_HPP__
+
+
+
+#endif // __LIBVARCONTAINER_HPP__

@@ -75,10 +75,9 @@ string CommandExecutor(string command){
         json j=json::parse(command);
         ProcessContainer pc;
         pc=j;
-        memory_container.process_container[processid]=pc;
+        memory_container.process_container[proc_name]=pc;
         return "Process operation completed";
     }
-    //TODO: 12 get process
 }
 
 // 会话类

@@ -22,63 +22,20 @@ struct Operation{
     int id;
 };
 vector<Operation> operations;
-MemoryContainer memory_container; // 全局内存容器
 void OperationInit(){
     operations.push_back({"set ",1});
     operations.push_back({"get ",2});
     operations.push_back({"del ",3});
     operations.push_back({"sync ",4});
-    operations.push_back({"process ",1});
-    operations.push_back({"var ",1});
 }
-string CommandExecutor(string command){
+void CommandExecutor(string command){
     int operation_id=0;
     for(const auto op:operations){
         if(GetPrefix(command,op.OperationValue.size())==op.OperationValue){
-            operation_id*=10;
-            operation_id+=op.id;
+            operation_id = op.id;
             command.erase(0,op.OperationValue.size()); // 去掉操作前缀
         }
     }
-    if(operation_id==0){
-        cout<<"Unknown command: "<<command<<"\n";
-        return;
-    }
-    if(operation_id==1){ // set
-        json j=json::parse(command);
-        memory_container=j;
-        return "Set operation completed";
-    }
-    if(operation_id==2){ // get
-        json j=memory_container.to_json();
-    }
-    if(operation_id==3){ // del
-        memory_container.clear();
-        return "Delete operation completed";
-    }
-    if(operation_id==4){ // sync
-        json j=json::parse(command);
-        MemoryContainer new_container;
-        new_container = j;
-        memory_container.Sync(new_container);
-        return "Sync operation completed";
-    }
-    if(operation_id==11){ // set process
-        string processid="";
-        for(char c:command){
-            if(c==' '){
-                break;
-            }
-            processid+=c;
-        }
-        command.erase(0,processid.size()+1);
-        json j=json::parse(command);
-        ProcessContainer pc;
-        pc=j;
-        memory_container.process_container[processid]=pc;
-        return "Process operation completed";
-    }
-    //TODO: 12 get process
 }
 
 // 会话类
@@ -152,11 +109,10 @@ int main() {
     OperationInit(); // 初始化操作列表
     try{
         asio::io_context io;
-        int port = 12345; // 监听端口
-        tcp::acceptor acceptor(io, tcp::endpoint(tcp::v4(), port));
+        tcp::acceptor acceptor(io, tcp::endpoint(tcp::v4(), 12345));
         set<shared_ptr<ServerSession>> clients;
 
-        cout<<"Server running on port "<<port<<"...\n";
+        cout<< "Server running on port 12345...\n";
         start_accepting(io, acceptor, clients);
 
         io.run();
