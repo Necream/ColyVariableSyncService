@@ -26,6 +26,7 @@ struct Var {
     // JSON 序列化
     json to_json() const {
         return json{
+            {"Name", Name},
             {"Type", Type},
             {"Value", Value},
             {"Timestamp", Timestamp}
@@ -34,6 +35,7 @@ struct Var {
     
     // JSON 反序列化
     void from_json(const json& j) {
+        Name = j.value("Name", "");
         Type = j.value("Type", "");
         Value = j.value("Value", "");
         Timestamp = j.value("Timestamp", 0);

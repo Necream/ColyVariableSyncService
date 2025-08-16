@@ -170,6 +170,7 @@ string CommandExecutor(string command){
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             return "Process not found";
         }
+        cout<<command<<endl;
         json j = json::parse(command);
         ProcessContainer new_pc;
         new_pc.from_json(j);  // 使用 from_json 替代赋值

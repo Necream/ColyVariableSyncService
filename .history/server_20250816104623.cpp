@@ -4,8 +4,6 @@
 #include <functional>
 #include <string>
 #include <cstring>
-// 添加ASIO的独立模式定义
-#define ASIO_STANDALONE
 #include "asio.hpp"
 #include "libVarContainer.hpp" // 包含 Var 和 PorcessContainer 的定义
 
@@ -26,12 +24,12 @@ struct Operation{
 vector<Operation> operations;
 MemoryContainer memory_container; // 全局内存容器
 void OperationInit(){
-    operations.push_back({"set",1});
-    operations.push_back({"get",2});
-    operations.push_back({"del",3});
-    operations.push_back({"sync",4});
-    operations.push_back({"process",1});
-    operations.push_back({"var",2});
+    operations.push_back({"set ",1});
+    operations.push_back({"get ",2});
+    operations.push_back({"del ",3});
+    operations.push_back({"sync ",4});
+    operations.push_back({"process ",1});
+    operations.push_back({"var ",2});
 }
 string CommandExecutor(string command){
     int operation_id=0;
@@ -39,7 +37,7 @@ string CommandExecutor(string command){
         if(GetPrefix(command,op.OperationValue.size())==op.OperationValue){
             operation_id*=10;
             operation_id+=op.id;
-            command.erase(0,min(command.size(),op.OperationValue.size()+1)); // 去掉操作前缀
+            command.erase(0,op.OperationValue.size()); // 去掉操作前缀
         }
     }
     if(operation_id==0){
@@ -53,7 +51,6 @@ string CommandExecutor(string command){
     }
     if(operation_id==2){ // get
         json j=memory_container.to_json();
-        return j.dump();
     }
     if(operation_id==3){ // del
         memory_container.clear();
@@ -229,9 +226,10 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
             [this, self](error_code ec, size_t length) {
                 if (!ec) {
                     string msg(read_buf, length);
+                    cout << "Received: " << msg << "\n";
 
                     // 回显固定消息
-                    send_message(CommandExecutor(msg));
+                    send_message("111");
 
                     // 继续读取
                     read_message();

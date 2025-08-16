@@ -4,8 +4,6 @@
 #include <functional>
 #include <string>
 #include <cstring>
-// 添加ASIO的独立模式定义
-#define ASIO_STANDALONE
 #include "asio.hpp"
 #include "libVarContainer.hpp" // 包含 Var 和 PorcessContainer 的定义
 
@@ -26,12 +24,12 @@ struct Operation{
 vector<Operation> operations;
 MemoryContainer memory_container; // 全局内存容器
 void OperationInit(){
-    operations.push_back({"set",1});
-    operations.push_back({"get",2});
-    operations.push_back({"del",3});
-    operations.push_back({"sync",4});
-    operations.push_back({"process",1});
-    operations.push_back({"var",2});
+    operations.push_back({"set ",1});
+    operations.push_back({"get ",2});
+    operations.push_back({"del ",3});
+    operations.push_back({"sync ",4});
+    operations.push_back({"process ",1});
+    operations.push_back({"var ",2});
 }
 string CommandExecutor(string command){
     int operation_id=0;
@@ -39,30 +37,29 @@ string CommandExecutor(string command){
         if(GetPrefix(command,op.OperationValue.size())==op.OperationValue){
             operation_id*=10;
             operation_id+=op.id;
-            command.erase(0,min(command.size(),op.OperationValue.size()+1)); // 去掉操作前缀
+            command.erase(0,op.OperationValue.size()); // 去掉操作前缀
         }
     }
     if(operation_id==0){
         cout<<"Unknown command: "<<command<<"\n";
-        return "Unknown command"+command;
+        return;
     }
     if(operation_id==1){ // set
-        json j = json::parse(command);
-        memory_container.from_json(j);  // 使用 from_json 替代赋值
+        json j=json::parse(command);
+        memory_container=j;
         return "Set operation completed";
     }
     if(operation_id==2){ // get
         json j=memory_container.to_json();
-        return j.dump();
     }
     if(operation_id==3){ // del
         memory_container.clear();
         return "Delete operation completed";
     }
     if(operation_id==4){ // sync
-        json j = json::parse(command);
+        json j=json::parse(command);
         MemoryContainer new_container;
-        new_container.from_json(j);  // 使用 from_json 替代赋值
+        new_container = j;
         memory_container.Sync(new_container);
         return "Sync operation completed";
     }
@@ -75,10 +72,10 @@ string CommandExecutor(string command){
             processid+=c;
         }
         command.erase(0,processid.size()+1);
-        json j = json::parse(command);
+        json j=json::parse(command);
         ProcessContainer pc;
-        pc.from_json(j);  // 使用 from_json 替代赋值
-        memory_container.process_container[processid] = pc;
+        pc=j;
+        memory_container.process_container[processid]=pc;
         return "Process operation completed";
     }
     if(operation_id==12){ // set var
@@ -98,10 +95,10 @@ string CommandExecutor(string command){
             varid+=c;
         }
         command.erase(0,varid.size()+1);
-        json j = json::parse(command);
+        json j=json::parse(command);
         Var v;
-        v.from_json(j);  // 使用 from_json 替代赋值
-        memory_container.process_container[processid].Vars[varid] = v;
+        v=j;
+        memory_container.process_container[processid].Vars[varid]=v;
         return "Var operation completed";
     }
     if(operation_id==21){ // get process
@@ -170,9 +167,9 @@ string CommandExecutor(string command){
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             return "Process not found";
         }
-        json j = json::parse(command);
+        json j=json::parse(command);
         ProcessContainer new_pc;
-        new_pc.from_json(j);  // 使用 from_json 替代赋值
+        new_pc=j;
         memory_container.process_container[processid].Sync(new_pc);
         return "Process sync completed";
     }
@@ -199,13 +196,13 @@ string CommandExecutor(string command){
         if(memory_container.process_container[processid].Vars.find(varid)==memory_container.process_container[processid].Vars.end()){
             return "Var not found";
         }
-        json j = json::parse(command);
+        json j=json::parse(command);
         Var new_var;
-        new_var.from_json(j);  // 使用 from_json 替代赋值
+        new_var=j;
         memory_container.process_container[processid].Vars[varid].Sync(new_var);
         return "Var sync completed";
     }
-    return "Unknown command"+command;
+    
 }
 
 // 会话类
@@ -229,9 +226,10 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
             [this, self](error_code ec, size_t length) {
                 if (!ec) {
                     string msg(read_buf, length);
+                    cout << "Received: " << msg << "\n";
 
                     // 回显固定消息
-                    send_message(CommandExecutor(msg));
+                    send_message("111");
 
                     // 继续读取
                     read_message();

@@ -75,6 +75,7 @@ string CommandExecutor(string command){
             processid+=c;
         }
         command.erase(0,processid.size()+1);
+        cout<<command<<endl;
         json j = json::parse(command);
         ProcessContainer pc;
         pc.from_json(j);  // 使用 from_json 替代赋值
@@ -98,6 +99,7 @@ string CommandExecutor(string command){
             varid+=c;
         }
         command.erase(0,varid.size()+1);
+        cout<<command<<endl;
         json j = json::parse(command);
         Var v;
         v.from_json(j);  // 使用 from_json 替代赋值
@@ -122,6 +124,7 @@ string CommandExecutor(string command){
         }
         command.erase(0,processid.size()+1);
         string varid=command;
+        cout<<command<<endl;
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             return "Process not found";
         }
@@ -170,6 +173,7 @@ string CommandExecutor(string command){
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             return "Process not found";
         }
+        cout<<command<<endl;
         json j = json::parse(command);
         ProcessContainer new_pc;
         new_pc.from_json(j);  // 使用 from_json 替代赋值

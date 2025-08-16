@@ -34,12 +34,13 @@ void OperationInit(){
     operations.push_back({"var",2});
 }
 string CommandExecutor(string command){
+    cout<<memory_container.to_json().dump(4)<<endl;
     int operation_id=0;
     for(const auto op:operations){
         if(GetPrefix(command,op.OperationValue.size())==op.OperationValue){
             operation_id*=10;
             operation_id+=op.id;
-            command.erase(0,min(command.size(),op.OperationValue.size()+1)); // 去掉操作前缀
+            command.erase(0,min(op.OperationValue.size()+1); // 去掉操作前缀
         }
     }
     if(operation_id==0){
@@ -47,19 +48,20 @@ string CommandExecutor(string command){
         return "Unknown command"+command;
     }
     if(operation_id==1){ // set
+        cout<<command<<endl;
         json j = json::parse(command);
         memory_container.from_json(j);  // 使用 from_json 替代赋值
         return "Set operation completed";
     }
     if(operation_id==2){ // get
         json j=memory_container.to_json();
-        return j.dump();
     }
     if(operation_id==3){ // del
         memory_container.clear();
         return "Delete operation completed";
     }
     if(operation_id==4){ // sync
+        cout<<command<<endl;
         json j = json::parse(command);
         MemoryContainer new_container;
         new_container.from_json(j);  // 使用 from_json 替代赋值
@@ -75,6 +77,7 @@ string CommandExecutor(string command){
             processid+=c;
         }
         command.erase(0,processid.size()+1);
+        cout<<command<<endl;
         json j = json::parse(command);
         ProcessContainer pc;
         pc.from_json(j);  // 使用 from_json 替代赋值
@@ -98,6 +101,7 @@ string CommandExecutor(string command){
             varid+=c;
         }
         command.erase(0,varid.size()+1);
+        cout<<command<<endl;
         json j = json::parse(command);
         Var v;
         v.from_json(j);  // 使用 from_json 替代赋值
@@ -122,6 +126,7 @@ string CommandExecutor(string command){
         }
         command.erase(0,processid.size()+1);
         string varid=command;
+        cout<<command<<endl;
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             return "Process not found";
         }
@@ -170,6 +175,7 @@ string CommandExecutor(string command){
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             return "Process not found";
         }
+        cout<<command<<endl;
         json j = json::parse(command);
         ProcessContainer new_pc;
         new_pc.from_json(j);  // 使用 from_json 替代赋值
@@ -199,6 +205,7 @@ string CommandExecutor(string command){
         if(memory_container.process_container[processid].Vars.find(varid)==memory_container.process_container[processid].Vars.end()){
             return "Var not found";
         }
+        cout<<command<<endl;
         json j = json::parse(command);
         Var new_var;
         new_var.from_json(j);  // 使用 from_json 替代赋值
@@ -229,6 +236,7 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
             [this, self](error_code ec, size_t length) {
                 if (!ec) {
                     string msg(read_buf, length);
+                    cout << "Received: " << msg << "\n";
 
                     // 回显固定消息
                     send_message(CommandExecutor(msg));
