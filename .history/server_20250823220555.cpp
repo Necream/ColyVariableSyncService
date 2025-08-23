@@ -73,7 +73,7 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
                     // 继续读取
                     read_message();
                 } else {
-                    cout << "Client(ProcessID:"<<session_map[self]<<") disconnected\n";
+                    cout << "Client disconnected\n";
                     close(self);
                 }
             });
@@ -94,6 +94,7 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
     void close(shared_ptr<ServerSession> client) {
         clients.erase(shared_from_this());
         socket.close();
+        session_map.erase(client); // 从会话映射中删除
         // 删除该会话对应的子进程映射
         if(subprocess_map.find(session_map[client]) != subprocess_map.end()){
             for(const string& subpid:subprocess_map[session_map[client]]){
@@ -101,10 +102,8 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
             }
             subprocess_map.erase(session_map[client]); // 删除子进程映射
         }
-        memory_container.process_container.erase(session_map[client]); // 删除进程容器
-        cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
-        session_map.erase(client); // 从会话映射中删除
     }
+    ~se
 };
 
 // 接受新连接
@@ -130,10 +129,10 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
             command.erase(0,min(command.size(),op.OperationValue.size()+1)); // 去掉操作前缀
         }
     }
-    if(operation_id!=51&&operation_id!=63){ // 非注册或登录操作需要验证会话
+    if(operation_id!=51){
         if(session_map.find(client)== session_map.end()){
-            cout<<"[ERROR]Client not registered or logined, please register or login first."<<endl;
-            return "[ERROR]Client not registered or logined, please register or login first.";
+            cout<<"[ERROR]Client not registered, please register first."<<endl;
+            return "[ERROR]Client not registered, please register first.";
         }
     }
     if(operation_id==0){
@@ -220,14 +219,6 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
             return "[ERROR]Process not found";
         }
         memory_container.process_container.erase(processid);
-        session_map.erase(client); // 注销会话
-        // 删除该会话对应的子进程映射
-        if(subprocess_map.find(processid) != subprocess_map.end()){
-            for(const string& subpid:subprocess_map[processid]){
-                proof_map.erase(subpid); // 删除子进程凭证
-            }
-            subprocess_map.erase(processid); // 删除子进程映射
-        }
         cout<<"Process deleted"<<endl;
         return "Process deleted";
     }
@@ -291,7 +282,8 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
             cout<<"[ERROR]Client already registered, please use a different command."<<endl;
             return "[ERROR]Client already registered, please use a different command.";
         }
-        if( memory_container.process_container.find(processid) != memory_container.process_container.end()){
+        if( memory_container.process_container.find(processid) != memory_container.process_container.end() ||
+            proof_map.find(processid) != proof_map.end()  ){
             cout<<"[ERROR]Process already exists, please use a different process ID."<<endl;
             return "[ERROR]Process already exists, please use a different process ID.";
         }

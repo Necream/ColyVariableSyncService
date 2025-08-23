@@ -33,7 +33,6 @@ vector<Operation> operations;
 MemoryContainer memory_container; // 全局内存容器
 map<string,string> proof_map; // 用于存储进程的登录凭证
 map<shared_ptr<ServerSession>,string> session_map; // 用于存储会话与进程ID的映射
-map<string,vector<string>> subprocess_map; // 用于存储进程与其子进程ID的映射
 void OperationInit(){
     operations.push_back({"set",1});
     operations.push_back({"get",2});
@@ -73,8 +72,8 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
                     // 继续读取
                     read_message();
                 } else {
-                    cout << "Client(ProcessID:"<<session_map[self]<<") disconnected\n";
-                    close(self);
+                    cout << "Client disconnected\n";
+                    close();
                 }
             });
     }
@@ -85,25 +84,16 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
         asio::async_write(socket, asio::buffer(msg),
             [this, self](error_code ec, size_t /*length*/) {
                 if (ec) {
-                    close(self);
+                    close();
+                    session_map.erase(self); // 从会话映射中删除
                 }
             });
     }
 
     // 关闭连接
-    void close(shared_ptr<ServerSession> client) {
+    void close() {
         clients.erase(shared_from_this());
         socket.close();
-        // 删除该会话对应的子进程映射
-        if(subprocess_map.find(session_map[client]) != subprocess_map.end()){
-            for(const string& subpid:subprocess_map[session_map[client]]){
-                proof_map.erase(subpid); // 删除子进程凭证
-            }
-            subprocess_map.erase(session_map[client]); // 删除子进程映射
-        }
-        memory_container.process_container.erase(session_map[client]); // 删除进程容器
-        cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
-        session_map.erase(client); // 从会话映射中删除
     }
 };
 
@@ -130,10 +120,10 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
             command.erase(0,min(command.size(),op.OperationValue.size()+1)); // 去掉操作前缀
         }
     }
-    if(operation_id!=51&&operation_id!=63){ // 非注册或登录操作需要验证会话
+    if(operation_id!=51){
         if(session_map.find(client)== session_map.end()){
-            cout<<"[ERROR]Client not registered or logined, please register or login first."<<endl;
-            return "[ERROR]Client not registered or logined, please register or login first.";
+            cout<<"[ERROR]Client not registered, please register first."<<endl;
+            return "[ERROR]Client not registered, please register first.";
         }
     }
     if(operation_id==0){
@@ -220,14 +210,6 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
             return "[ERROR]Process not found";
         }
         memory_container.process_container.erase(processid);
-        session_map.erase(client); // 注销会话
-        // 删除该会话对应的子进程映射
-        if(subprocess_map.find(processid) != subprocess_map.end()){
-            for(const string& subpid:subprocess_map[processid]){
-                proof_map.erase(subpid); // 删除子进程凭证
-            }
-            subprocess_map.erase(processid); // 删除子进程映射
-        }
         cout<<"Process deleted"<<endl;
         return "Process deleted";
     }
@@ -285,35 +267,30 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
         return "Var sync completed";
     }
     //TODO:
-    if(operation_id==51){ // reg process   This will auto login process
+    if(operation_id==51){ // reg process
         string processid=command;
         if(session_map.find(client) != session_map.end()){
             cout<<"[ERROR]Client already registered, please use a different command."<<endl;
             return "[ERROR]Client already registered, please use a different command.";
         }
-        if( memory_container.process_container.find(processid) != memory_container.process_container.end()){
+        session_map[client] = processid; // 将会话与进程ID关联
+        if(memory_container.process_container.find(processid) != memory_container.process_container.end()){
             cout<<"[ERROR]Process already exists, please use a different process ID."<<endl;
             return "[ERROR]Process already exists, please use a different process ID.";
         }
-        session_map[client] = processid; // 将会话与进程ID关联
         ProcessContainer pc;
         memory_container.process_container[processid] = pc; // 初始化进程容器
+        proof_map[processid] = session_map[client]; // 初始化进程凭证
         cout<<"Process "<<processid<<" registered."<<endl;
         return "Process registered";
     }
-    if(operation_id==53){ // reg subprocess
+    if(operation_id==53){ // reg subprocess 
         string subprocessid=command;
         if(proof_map.find(subprocessid) != proof_map.end()){
             cout<<"[ERROR]Subprocess already exists, please use a different subprocess ID."<<endl;
             return "[ERROR]Subprocess already exists, please use a different subprocess ID.";
         }
-        if(subprocess_map.find(session_map[client]) == subprocess_map.end()){
-            proof_map[subprocessid] = session_map[client]; // 初始化子进程凭证
-            subprocess_map[session_map[client]].push_back(subprocessid); // 记录子进程ID
-        }else{
-            cout<<"[ERROR]Parent process not found, please register parent process first."<<endl;
-        }
-        cout<<proof_map[subprocessid]<<endl;
+        proof_map[subprocessid] = session_map[client]; // 初始化子进程凭证
         cout<<"Subprocess registered."<<endl;
         return "Subprocess registered";
     }

@@ -105,6 +105,12 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
         cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
         session_map.erase(client); // 从会话映射中删除
     }
+    ~ServerSession() {
+        for(auto it:clients){
+            
+            close(it);
+        }
+    }
 };
 
 // 接受新连接

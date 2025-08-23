@@ -105,6 +105,11 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
         cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
         session_map.erase(client); // 从会话映射中删除
     }
+    ~ServerSession() {
+        for(auto it:clients){
+            close(it);
+        }
+    }
 };
 
 // 接受新连接
@@ -130,7 +135,7 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
             command.erase(0,min(command.size(),op.OperationValue.size()+1)); // 去掉操作前缀
         }
     }
-    if(operation_id!=51&&operation_id!=63){ // 非注册或登录操作需要验证会话
+    if(operation_id!=51operation_id!=63){ // 非注册或登录操作需要验证会话
         if(session_map.find(client)== session_map.end()){
             cout<<"[ERROR]Client not registered or logined, please register or login first."<<endl;
             return "[ERROR]Client not registered or logined, please register or login first.";
