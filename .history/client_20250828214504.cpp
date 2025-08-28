@@ -61,7 +61,7 @@ void close_connection(NetworkSession& session) {
 }
 
 int main(int argc, char* argv[]) {
-    std::string host = "127.0.0.1";
+    std::string host = "";
     std::string port = "12345";
     if (argc == 2) {
         port = argv[1];

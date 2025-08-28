@@ -4,7 +4,6 @@
 #include <functional>
 #include <string>
 #include <cstring>
-#include "GXPass.hpp"
 // 添加ASIO的独立模式定义
 #define ASIO_STANDALONE
 #include "asio.hpp"
@@ -74,8 +73,7 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
                     // 继续读取
                     read_message();
                 } else {
-                    if(session_map.find(self)!=session_map.end()) cout << "Client(ProcessID:"<<session_map[self]<<") disconnected\n";
-                    else cout << "Client(ClientID:"<<self<<") disconnected\n";
+                    cout << "Client(ProcessID:"<<session_map[self]<<") disconnected\n";
                     close(self);
                 }
             });
@@ -104,10 +102,8 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
             subprocess_map.erase(session_map[client]); // 删除子进程映射
         }
         memory_container.process_container.erase(session_map[client]); // 删除进程容器
-        if(session_map.find(client)!=session_map.end()){
-            cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
-            session_map.erase(client); // 从会话映射中删除
-        }
+        cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
+        session_map.erase(client); // 从会话映射中删除
     }
 };
 
@@ -179,8 +175,15 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
     }
     if(operation_id==12){ // set var
         string processid=session_map[client]; // 获取会话对应的进程ID
+        string varid="";
+        for(char c:command){
+            if(c==' '){
+                break;
+            }
+            varid+=c;
+        }
+        command.erase(0,varid.size()+1);
         json j = json::parse(command);
-        string varid=GXPass::number2ABC(GXPass::compile(j["Name"]));
         Var v;
         v.from_json(j);  // 使用 from_json 替代赋值
         memory_container.process_container[processid].Vars[varid] = v;
@@ -198,7 +201,7 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
     }
     if(operation_id==22){ // get var
         string processid=session_map[client]; // 获取会话对应的进程ID
-        string varid=GXPass::number2ABC(GXPass::compile(command));
+        string varid=command;
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             cout<<"[ERROR]Process not found"<<endl;
             return "[ERROR]Process not found";
@@ -230,7 +233,7 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
     }
     if(operation_id==32){ // del var
         string processid=session_map[client]; // 获取会话对应的进程ID
-        string varid=GXPass::number2ABC(GXPass::compile(command));
+        string varid=command;
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             cout<<"[ERROR]Process not found"<<endl;
             return "[ERROR]Process not found";
@@ -258,16 +261,23 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
     }
     if(operation_id==42){ // sync var
         string processid=session_map[client]; // 获取会话对应的进程ID
+        string varid="";
+        for(char c:command){
+            if(c==' '){
+                break;
+            }
+            varid+=c;
+        }
+        command.erase(0,varid.size()+1);
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             cout<<"[ERROR]Process not found"<<endl;
             return "[ERROR]Process not found";
         }
-        json j = json::parse(command);
-        string varid=GXPass::number2ABC(GXPass::compile(j["Name"]));
         if(memory_container.process_container[processid].Vars.find(varid)==memory_container.process_container[processid].Vars.end()){
             cout<<"[ERROR]Var not found"<<endl;
             return "[ERROR]Var not found";
         }
+        json j = json::parse(command);
         Var new_var;
         new_var.from_json(j);  // 使用 from_json 替代赋值
         memory_container.process_container[processid].Vars[varid].Sync(new_var);
@@ -276,7 +286,7 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
     }
     //TODO:
     if(operation_id==51){ // reg process   This will auto login process
-        string processid=GXPass::number2ABC(GXPass::compile(command));
+        string processid=GXPass::compile(command);
         if(session_map.find(client) != session_map.end()){
             cout<<"[ERROR]Client already registered, please use a different command."<<endl;
             return "[ERROR]Client already registered, please use a different command.";
@@ -292,7 +302,7 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
         return "Process registered";
     }
     if(operation_id==53){ // reg subprocess
-        string subprocessid=GXPass::number2ABC(GXPass::compile(command));
+        string subprocessid=command;
         if(proof_map.find(subprocessid) != proof_map.end()){
             cout<<"[ERROR]Subprocess already exists, please use a different subprocess ID."<<endl;
             return "[ERROR]Subprocess already exists, please use a different subprocess ID.";
@@ -308,7 +318,7 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
         return "Subprocess registered";
     }
     if(operation_id==63){ // login subprocess
-        string subprocessid=GXPass::number2ABC(GXPass::compile(command));
+        string subprocessid=command;
         if(proof_map.find(subprocessid) == proof_map.end()){
             cout<<"[ERROR]Subprocess not found, please register first."<<endl;
             return "[ERROR]Subprocess not found, please register first.";
@@ -322,14 +332,11 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
     return "[ERROR]Unknown command"+command;
 }
 
-int main(int argc, char* argv[]){
+int main() {
     OperationInit(); // 初始化操作列表
     try{
         asio::io_context io;
         int port = 12345; // 监听端口
-        if(argc==2){
-            port=atoi(argv[1]);
-        }
         tcp::acceptor acceptor(io, tcp::endpoint(tcp::v4(), port));
         set<shared_ptr<ServerSession>> clients;
 

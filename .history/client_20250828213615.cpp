@@ -61,19 +61,17 @@ void close_connection(NetworkSession& session) {
 }
 
 int main(int argc, char* argv[]) {
-    std::string host = "127.0.0.1";
+    NetworkSession session;
+
+    std::string host = "";
     std::string port = "12345";
     if (argc == 2) {
         port = argv[1];
     }
     if (argc == 3) {
-        host = argv[1];
-        port = argv[2];
+        
     }
-
-    NetworkSession session;
-    if (!connect_to_server(session, host, port)) {
-        std::cout << "Failed to connect to server" << std::endl;
+    if (!connect_to_server(session, "127.0.0.1", "12345")) {
         return 1;
     }
 

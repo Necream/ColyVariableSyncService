@@ -74,8 +74,7 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
                     // 继续读取
                     read_message();
                 } else {
-                    if(session_map.find(self)!=session_map.end()) cout << "Client(ProcessID:"<<session_map[self]<<") disconnected\n";
-                    else cout << "Client(ClientID:"<<self<<") disconnected\n";
+                    cout << "Client(ProcessID:"<<session_map[self]<<") disconnected\n";
                     close(self);
                 }
             });
@@ -104,10 +103,8 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
             subprocess_map.erase(session_map[client]); // 删除子进程映射
         }
         memory_container.process_container.erase(session_map[client]); // 删除进程容器
-        if(session_map.find(client)!=session_map.end()){
-            cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
-            session_map.erase(client); // 从会话映射中删除
-        }
+        cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
+        session_map.erase(client); // 从会话映射中删除
     }
 };
 
@@ -327,9 +324,7 @@ int main(int argc, char* argv[]){
     try{
         asio::io_context io;
         int port = 12345; // 监听端口
-        if(argc==2){
-            port=atoi(argv[1]);
-        }
+        if()
         tcp::acceptor acceptor(io, tcp::endpoint(tcp::v4(), port));
         set<shared_ptr<ServerSession>> clients;
 

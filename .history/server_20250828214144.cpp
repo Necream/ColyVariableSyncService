@@ -75,7 +75,7 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
                     read_message();
                 } else {
                     if(session_map.find(self)!=session_map.end()) cout << "Client(ProcessID:"<<session_map[self]<<") disconnected\n";
-                    else cout << "Client(ClientID:"<<self<<") disconnected\n";
+                    else cout << "Client(PortID:"<<self<<") disconnected\n";
                     close(self);
                 }
             });
