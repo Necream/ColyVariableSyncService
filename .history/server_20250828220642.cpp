@@ -94,17 +94,17 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
 
     // 关闭连接
     void close(shared_ptr<ServerSession> client) {
-        if(session_map.find(client)!=session_map.end()){
-            clients.erase(shared_from_this());
-            socket.close();
-            // 删除该会话对应的子进程映射
-            if(subprocess_map.find(session_map[client]) != subprocess_map.end()){
-                for(const string& subpid:subprocess_map[session_map[client]]){
-                    proof_map.erase(subpid); // 删除子进程凭证
-                }
-                subprocess_map.erase(session_map[client]); // 删除子进程映射
+        clients.erase(shared_from_this());
+        socket.close();
+        // 删除该会话对应的子进程映射
+        if(subprocess_map.find(session_map[client]) != subprocess_map.end()){
+            for(const string& subpid:subprocess_map[session_map[client]]){
+                proof_map.erase(subpid); // 删除子进程凭证
             }
-            memory_container.process_container.erase(session_map[client]); // 删除进程容器
+            subprocess_map.erase(session_map[client]); // 删除子进程映射
+        }
+        memory_container.process_container.erase(session_map[client]); // 删除进程容器
+        if(session_map.find(client)!=session_map.end()){
             cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
             session_map.erase(client); // 从会话映射中删除
         }
@@ -191,7 +191,6 @@ string CommandExecutor(string command,shared_ptr<ServerSession> client){
         string processid=session_map[client]; // 获取会话对应的进程ID
         if(memory_container.process_container.find(processid)==memory_container.process_container.end()){
             cout<<"[ERROR]Process not found.You can register now."<<endl;
-            session_map.erase(client); // 注销会话
             return "[ERROR]Process not found.You can register now.";
         }
         json j=memory_container.process_container[processid].to_json();

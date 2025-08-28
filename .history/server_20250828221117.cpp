@@ -95,16 +95,16 @@ struct ServerSession : enable_shared_from_this<ServerSession>{
     // 关闭连接
     void close(shared_ptr<ServerSession> client) {
         if(session_map.find(client)!=session_map.end()){
-            clients.erase(shared_from_this());
-            socket.close();
-            // 删除该会话对应的子进程映射
-            if(subprocess_map.find(session_map[client]) != subprocess_map.end()){
-                for(const string& subpid:subprocess_map[session_map[client]]){
-                    proof_map.erase(subpid); // 删除子进程凭证
-                }
-                subprocess_map.erase(session_map[client]); // 删除子进程映射
+        clients.erase(shared_from_this());
+        socket.close();
+        // 删除该会话对应的子进程映射
+        if(subprocess_map.find(session_map[client]) != subprocess_map.end()){
+            for(const string& subpid:subprocess_map[session_map[client]]){
+                proof_map.erase(subpid); // 删除子进程凭证
             }
-            memory_container.process_container.erase(session_map[client]); // 删除进程容器
+            subprocess_map.erase(session_map[client]); // 删除子进程映射
+        }
+        memory_container.process_container.erase(session_map[client]); // 删除进程容器
             cout<<"Session(ProcessID:"<<session_map[client]<<") closed and resources cleaned up."<<endl;
             session_map.erase(client); // 从会话映射中删除
         }
